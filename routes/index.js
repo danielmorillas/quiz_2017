@@ -17,6 +17,14 @@ router.get('/author', function(req, res, next) {
 // Autoload de rutas que usen :quizId
 router.param('quizId', quizController.load);
 
+//Pagina de jugar
+
+router.get('/quizzes/randomplay', quizController.random_play);
+
+//Pagina de resultados
+
+router.get('/quizzes/randomcheck/:quizId?(\\d+)', quizController.random_check);
+
 
 // Definición de rutas de /quizzes
 router.get('/quizzes',                     quizController.index);

@@ -187,3 +187,77 @@ exports.check = function (req, res, next) {
         answer: answer
     });
 };
+
+// GET /quizzes/randomplay
+exports.random_play = function (req, res, next){
+
+    if(!req.session.play){
+        req.session.play={
+            acertadas:[]
+        };
+    }
+
+    var acertadas = req.session.play.acertadas.length ? req.session.play.acertadas : [-1];
+
+    models.Quiz.count({where:{id:{$notIn:acertadas}}})
+        .then(function(c){
+                var aleatorio=Math.floor(Math.random()*c);
+                return models.Quiz.findAll({
+                    limit:1,
+                    offset:aleatorio,
+                    where:{id:{$notIn:acertadas}}
+                });
+                }).then(function(preg){ //preg es un array con una sola pregunta aleatoria para el jugador
+                    if(!preg[0]){
+                        var aciertos= req.session.play.acertadas.length;
+                        req.session.play.acertadas=[];
+                        res.render('quizzes/random_nomore', {
+                        score:aciertos
+                        });
+                    }else{
+                        var question=preg[0];
+                        req.session.play.acertadas.push(question.id);
+                        res.render('quizzes/random_play', {
+                            quiz:question,
+                            score:req.session.play.acertadas.length-1
+                            });
+                    }
+
+                }).catch(function(error) {
+                          next(error);
+                });
+};
+
+
+//GET /quizzes/randomcheck/:quizId?answer=respuesta
+
+exports.random_check = function (req, res, next){
+
+    var answer = req.query.answer || "";
+
+    var result = answer.toLowerCase().trim() === req.quiz.answer.toLowerCase().trim();
+
+
+    if(!result){ //si fallo
+        
+        req.session.play.acertadas.length=req.session.play.acertadas.length-1;
+        var aciertos= req.session.play.acertadas.length;
+        req.session.play.acertadas=[];
+        res.render('quizzes/random_result', {
+            quiz: req.quiz,
+            result: result,
+            answer: answer,
+            score:aciertos
+            });
+    }else{
+            res.render('quizzes/random_result', {
+            quiz: req.quiz,
+            result: result,
+            answer: answer,
+            score:req.session.play.acertadas.length
+            });
+
+}
+};
+
+
